@@ -1,32 +1,46 @@
 import requests
-import os
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
-load_dotenv()
+config = dotenv_values(".env")
 
-class forecast:
+class Forecast:
     def __init__(self, city):
         self.city = city
+        self.url = f"https://api.tomorrow.io/v4/weather/realtime?location={self.city}&units=metric&apikey={config["API_KEY"]}"
+        self.headers = {"accept": "application/json"}
+        self.response = None
+        self.values = None
+
+    def find_values(self):
+        self.values = self.response["data"]["values"]
+
+    def get_temperature(self):
+        print(f"Temperature: {self.values["temperature"]} C")
+
+    def get_humidity(self):
+        print(f"Humidity: {self.values["humidity"]} %")
+
+    def get_wind_speed(self):
+        print(f"Wind Speed: {self.values["windSpeed"]} km/h")
+
+    def get_forecast(self):
         try:
-            url = f"https://api.tomorrow.io/v4/weather/realtime?location={city}&units=metric&apikey={os.getenv("API_KEY")}"
-            headers = {"accept": "application/json"}
-            response = requests.get(url, headers=headers)
-            res = response.json()
+            response = requests.get(self.url, headers=self.headers)
+            self.response = response.json()
             
             if response.status_code != 200:
                 raise ValueError("\nInvalid city name. Please try again.")
             else:
+                self.find_values()
                 print(f"\n{"*"*30} Weather Forecast {"*"*30}")
-                print(res["location"]["name"])
-                print(f"Temperature: {res["data"]["values"]["temperature"]} C")
-                print(f"Humidity: {res["data"]["values"]["humidity"]} %")
-                print(f"Wind Speed: {res["data"]["values"]["windSpeed"]} km/h")
+                print(self.response["location"]["name"])
+                self.get_temperature()
+                self.get_humidity()
+                self.get_wind_speed()
         except ValueError as ve:
             print(ve)
         except Exception as e:
             print("\nAn error occurred while fetching the weather data. Please try again later.")  
-
-
 
 def main():  
     while True:
@@ -38,7 +52,8 @@ def main():
         match choice:
             case "1":
                 location = input("\nPlease enter city name: ")
-                forecast(location)
+                forecast = Forecast(location)
+                forecast.get_forecast()
             case "0":
                 break
             case _:
